@@ -249,7 +249,12 @@ const PortfolioPage = () => {
         isSubmitting={actionSubmitting}
         onClose={() => setIsDetailOpen(false)}
         onEdit={openEdit}
-        onSell={() => handleSell(selectedCompany)}
+        onSell={() => setConfirm({
+          title: 'Vender empresa',
+          description: `Deseas vender ${selectedCompany?.name}? Esta accion no se puede deshacer.`,
+          confirmLabel: 'Vender',
+          onConfirm: () => handleSell(selectedCompany),
+        })}
         onDelete={() => setConfirm({
           title: 'Eliminar empresa',
           description: `¿Deseas eliminar ${selectedCompany?.name}? Esta acción no se puede deshacer.`,
