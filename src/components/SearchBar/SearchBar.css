@@ -1,0 +1,9 @@
+.search-bar {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.search-bar__input {
+  flex: 1;
+}
