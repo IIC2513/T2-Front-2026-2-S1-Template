@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
-import { getFavorites } from '../../api/favorites';
+import { addFavorite, getFavorites, removeFavorite } from '../../api/favorites';
 import { useAuth } from '../../context/AuthContext';
 import { MarketCompanyCard } from '../../components/CompanyCard/MarketCompanyCard';
 import { CompanyDetailModal } from '../../components/Modals/CompanyDetailModal';
@@ -19,6 +19,7 @@ const MarketPage = () => {
 
   const [companies, setCompanies] = useState([]);
   const [favoriteIds, setFavoriteIds] = useState([]);
+  const [favoriteActionId, setFavoriteActionId] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -67,6 +68,35 @@ const MarketPage = () => {
         setFavoriteIds([]);
       });
   }, [isAuthenticated]);
+
+  const handleToggleFavorite = async (company) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    const isFavorite = favoriteIds.includes(company.id);
+    setFavoriteActionId(company.id);
+
+    try {
+      if (isFavorite) {
+        await removeFavorite(company.id);
+        setFavoriteIds((current) => current.filter((id) => id !== company.id));
+        setSuccessModal({ title: 'Favorito eliminado', message: `${company.name} ya no está en tus favoritos.` });
+      } else {
+        await addFavorite(company.id);
+        setFavoriteIds((current) => [...current, company.id]);
+        setSuccessModal({ title: 'Favorito agregado', message: `${company.name} fue agregada a tus favoritos.` });
+      }
+    } catch (error) {
+      setErrorModal({
+        title: 'No se pudo actualizar favoritos',
+        message: error?.response?.data?.error || 'No pudimos actualizar tus favoritos.',
+      });
+    } finally {
+      setFavoriteActionId(null);
+    }
+  };
 
   const handleBuy = async (company) => {
     try {
@@ -132,6 +162,8 @@ const MarketPage = () => {
                     key={company.id}
                     company={company}
                     isFavorite={favoriteIds.includes(company.id)}
+                    isFavoriteLoading={favoriteActionId === company.id}
+                    onToggleFavorite={handleToggleFavorite}
                     onDetail={setSelectedCompany}
                     onBuy={(company) => setPendingAction({ type: 'buy', company })}
                   />
