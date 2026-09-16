@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../../api/client';
+import apiClient, { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { ConfirmActionModal } from '../../components/Modals/ConfirmActionModal';
 import { CreateCompanyModal } from '../../components/Modals/CreateCompanyModal';
 import { EditCompanyModal } from '../../components/Modals/EditCompanyModal';
 import { PortfolioDetailModal } from '../../components/Modals/PortfolioDetailModal';
 import { PortfolioCompanyCard } from '../../components/CompanyCard/PortfolioCompanyCard';
+import { SuccessMessageModal } from '../../components/Modals/SuccessMessageModal';
+import { ErrorMessageModal } from '../../components/Modals/ErrorMessageModal';
 import './PortfolioPage.css';
 
 const PAGE_SIZE = 9;
@@ -24,6 +26,7 @@ const PortfolioPage = () => {
 
   const [portfolio, setPortfolio] = useState({ balance: 0, companies: [], portfolioValue: 0, netWorth: 0 });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [page, setPage] = useState(1);
 
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -36,9 +39,17 @@ const PortfolioPage = () => {
     name: '', symbol: '', description: '', sector: '', marketCap: '1000', logoUrl: '',
   });
   const [editForm, setEditForm] = useState({ name: '', description: '', sector: '' });
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [actionSubmitting, setActionSubmitting] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [editError, setEditError] = useState('');
+  const [successModal, setSuccessModal] = useState(null);
+  const [errorModal, setErrorModal] = useState(null);
 
   const loadPortfolio = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const { data } = await apiClient.get('/portfolio');
       setPortfolio({
@@ -50,6 +61,7 @@ const PortfolioPage = () => {
       updateUser({ balance: data.balance ?? 0 });
     } catch (error) {
       console.error('Error cargando portfolio:', error);
+      setLoadError(getErrorMessage(error, 'No pudimos cargar tu portfolio.'));
     } finally {
       setLoading(false);
     }
@@ -79,6 +91,8 @@ const PortfolioPage = () => {
   };
 
   const handleCreate = async () => {
+    setCreateSubmitting(true);
+    setCreateError('');
     try {
       await apiClient.post('/companies', {
         name: createForm.name,
@@ -90,13 +104,19 @@ const PortfolioPage = () => {
       });
       setIsCreateOpen(false);
       setCreateForm({ name: '', symbol: '', description: '', sector: '', marketCap: '1000', logoUrl: '' });
+      setSuccessModal({ title: 'Empresa creada', message: 'La empresa fue creada correctamente.' });
       loadPortfolio();
     } catch (error) {
       console.error('Error creando empresa:', error);
+      setCreateError(getErrorMessage(error, 'No pudimos crear la empresa.'));
+    } finally {
+      setCreateSubmitting(false);
     }
   };
 
   const handleEdit = async () => {
+    setEditSubmitting(true);
+    setEditError('');
     try {
       await apiClient.patch(`/companies/${selectedCompany.id}`, {
         name: editForm.name,
@@ -104,29 +124,46 @@ const PortfolioPage = () => {
         sector: editForm.sector,
       });
       setIsEditOpen(false);
+      setSuccessModal({ title: 'Empresa actualizada', message: 'Los datos fueron actualizados correctamente.' });
       loadPortfolio();
     } catch (error) {
       console.error('Error editando empresa:', error);
+      setEditError(getErrorMessage(error, 'No pudimos actualizar la empresa.'));
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
   const handleSell = async (company) => {
+    setActionSubmitting(true);
     try {
       await apiClient.post(`/companies/${company.id}/sell`, {});
       setIsDetailOpen(false);
+      setSelectedCompany(null);
+      setSuccessModal({ title: 'Empresa vendida', message: `${company.name} fue vendida correctamente.` });
       loadPortfolio();
     } catch (error) {
       console.error('Error vendiendo empresa:', error);
+      setErrorModal({ title: 'No se pudo vender', message: getErrorMessage(error, 'No pudimos vender la empresa.') });
+    } finally {
+      setActionSubmitting(false);
     }
   };
 
   const handleDelete = async (company) => {
+    setActionSubmitting(true);
     try {
       await apiClient.delete(`/companies/${company.id}`);
       setIsDetailOpen(false);
+      setConfirm(null);
+      setSelectedCompany(null);
+      setSuccessModal({ title: 'Empresa eliminada', message: `${company.name} fue eliminada correctamente.` });
       loadPortfolio();
     } catch (error) {
       console.error('Error eliminando empresa:', error);
+      setErrorModal({ title: 'No se pudo eliminar', message: getErrorMessage(error, 'No pudimos eliminar la empresa.') });
+    } finally {
+      setActionSubmitting(false);
     }
   };
 
@@ -167,6 +204,10 @@ const PortfolioPage = () => {
 
       {loading ? (
         <p>Cargando tu portfolio...</p>
+      ) : loadError ? (
+        <div className="alert alert-error" role="alert">
+          {loadError}
+        </div>
       ) : (
         <section className="market-section">
           <div className="section-heading">
@@ -205,15 +246,21 @@ const PortfolioPage = () => {
 
       <PortfolioDetailModal
         company={isDetailOpen ? selectedCompany : null}
+        isSubmitting={actionSubmitting}
         onClose={() => setIsDetailOpen(false)}
         onEdit={openEdit}
-        onSell={() => handleSell(selectedCompany)}
+        onSell={() => setConfirm({
+          title: 'Vender empresa',
+          description: `Deseas vender ${selectedCompany?.name}? Esta accion no se puede deshacer.`,
+          confirmLabel: 'Vender',
+          onConfirm: () => handleSell(selectedCompany),
+        })}
         onDelete={() => setConfirm({
           title: 'Eliminar empresa',
           description: `¿Deseas eliminar ${selectedCompany?.name}? Esta acción no se puede deshacer.`,
           confirmLabel: 'Eliminar',
           variant: 'danger',
-          onConfirm: () => { handleDelete(selectedCompany); setConfirm(null); },
+          onConfirm: () => handleDelete(selectedCompany),
         })}
       />
 
@@ -222,7 +269,17 @@ const PortfolioPage = () => {
         form={editForm}
         setForm={setEditForm}
         onClose={() => setIsEditOpen(false)}
-        onSubmit={(event) => { event.preventDefault(); handleEdit(); }}
+        isSubmitting={editSubmitting}
+        submitError={editError}
+        onSubmit={(event) => {
+          event.preventDefault();
+          setConfirm({
+            title: 'Editar empresa',
+            description: `Deseas guardar los cambios de ${editForm.name}?`,
+            confirmLabel: 'Guardar cambios',
+            onConfirm: handleEdit,
+          });
+        }}
       />
 
       <CreateCompanyModal
@@ -230,7 +287,17 @@ const PortfolioPage = () => {
         form={createForm}
         setForm={setCreateForm}
         onClose={() => setIsCreateOpen(false)}
-        onSubmit={(event) => { event.preventDefault(); handleCreate(); }}
+        isSubmitting={createSubmitting}
+        submitError={createError}
+        onSubmit={(event) => {
+          event.preventDefault();
+          setConfirm({
+            title: 'Crear empresa',
+            description: `Deseas crear la empresa ${createForm.name}?`,
+            confirmLabel: 'Crear empresa',
+            onConfirm: handleCreate,
+          });
+        }}
       />
 
       <ConfirmActionModal
@@ -239,8 +306,23 @@ const PortfolioPage = () => {
         description={confirm?.description}
         confirmLabel={confirm?.confirmLabel}
         variant={confirm?.variant}
+        isSubmitting={actionSubmitting}
         onClose={() => setConfirm(null)}
         onConfirm={confirm?.onConfirm}
+      />
+
+      <SuccessMessageModal
+        isOpen={Boolean(successModal)}
+        title={successModal?.title ?? 'Listo'}
+        message={successModal?.message ?? ''}
+        onClose={() => setSuccessModal(null)}
+      />
+
+      <ErrorMessageModal
+        isOpen={Boolean(errorModal)}
+        title={errorModal?.title ?? 'Error'}
+        message={errorModal?.message ?? ''}
+        onClose={() => setErrorModal(null)}
       />
     </div>
   );

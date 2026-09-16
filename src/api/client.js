@@ -17,4 +17,20 @@ export function getErrorMessage(error, fallback = 'Ocurrió un error inesperado.
   return error?.response?.data?.error || fallback;
 }
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const requestUrl = error.config?.url || '';
+    const isLoginRequest = requestUrl.endsWith('/login');
+
+    if (error.response?.status === 401 && !isLoginRequest) {
+      localStorage.removeItem('dccapital_token');
+      localStorage.removeItem('dccapital_user');
+      window.dispatchEvent(new Event('dccapital:session-expired'));
+    }
+
+    return Promise.reject(error);
+  },
+);
+
 export default apiClient;

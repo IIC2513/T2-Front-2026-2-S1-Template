@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../../api/client';
+import apiClient, { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { ConfirmActionModal } from '../../components/Modals/ConfirmActionModal';
 import { SuccessMessageModal } from '../../components/Modals/SuccessMessageModal';
@@ -15,6 +15,7 @@ const ProfilePage = () => {
   const [formError, setFormError] = useState('');
 
   const [pendingAction, setPendingAction] = useState(null); // 'edit' | 'delete' | null
+  const [actionSubmitting, setActionSubmitting] = useState(false);
   const [successModal, setSuccessModal] = useState(null);
   const [errorModal, setErrorModal] = useState(null);
 
@@ -44,6 +45,7 @@ const ProfilePage = () => {
   };
 
   const confirmEdit = async () => {
+    setActionSubmitting(true);
     try {
       const { data } = await apiClient.patch('/me', {
         username: form.username,
@@ -54,20 +56,25 @@ const ProfilePage = () => {
       setPendingAction(null);
       setSuccessModal({ title: 'Perfil actualizado', message: 'Tus cambios se guardaron correctamente.' });
     } catch (error) {
+      setErrorModal({ title: 'No se pudo actualizar', message: getErrorMessage(error, 'No pudimos actualizar tu perfil.') });
+    } finally {
+      setActionSubmitting(false);
       setPendingAction(null);
-      setErrorModal({ title: 'Error', message: 'No pudimos actualizar tu perfil.' });
     }
   };
 
   const confirmDelete = async () => {
+    setActionSubmitting(true);
     try {
       await apiClient.delete('/me');
       setPendingAction(null);
       logout();
       setSuccessModal({ title: 'Cuenta eliminada', message: 'Tu cuenta fue eliminada correctamente.' });
     } catch (error) {
+      setErrorModal({ title: 'No se pudo eliminar', message: getErrorMessage(error, 'No pudimos eliminar tu cuenta.') });
+    } finally {
+      setActionSubmitting(false);
       setPendingAction(null);
-      setErrorModal({ title: 'Error', message: 'No pudimos eliminar tu cuenta.' });
     }
   };
 
@@ -129,15 +136,17 @@ const ProfilePage = () => {
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary">Guardar cambios</button>
+            <button type="submit" className="btn btn-primary" disabled={pendingAction !== null}>
+              {pendingAction === 'edit' ? 'Procesando...' : 'Guardar cambios'}
+            </button>
           </form>
         </section>
 
         <section className="card profile-danger-card">
           <h2>Eliminar cuenta</h2>
           <p>Esta acción elimina tu usuario para SIEMPRE</p>
-          <button type="button" className="btn btn-danger" onClick={() => setPendingAction('delete')}>
-            Eliminar mi cuenta
+          <button type="button" className="btn btn-danger" onClick={() => setPendingAction('delete')} disabled={pendingAction !== null}>
+            {pendingAction === 'delete' ? 'Procesando...' : 'Eliminar mi cuenta'}
           </button>
         </section>
       </div>
@@ -147,6 +156,7 @@ const ProfilePage = () => {
         title="Confirmar cambios"
         description="¿Deseas guardar los cambios en tu perfil?"
         confirmLabel="Guardar"
+        isSubmitting={actionSubmitting}
         onClose={() => setPendingAction(null)}
         onConfirm={confirmEdit}
       />
@@ -157,6 +167,7 @@ const ProfilePage = () => {
         description={`¿Seguro que quieres eliminar tu cuenta "${form.username}"? Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         variant="danger"
+        isSubmitting={actionSubmitting}
         onClose={() => setPendingAction(null)}
         onConfirm={confirmDelete}
       />

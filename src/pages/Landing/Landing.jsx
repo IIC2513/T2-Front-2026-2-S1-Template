@@ -1,28 +1,41 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import apiClient from '../../api/client';
+import apiClient, { getErrorMessage } from '../../api/client';
 import './Landing.css';
 
 const Landing = () => {
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [companiesLoading, setCompaniesLoading] = useState(true);
+  const [usersError, setUsersError] = useState('');
+  const [companiesError, setCompaniesError] = useState('');
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadUsers = async () => {
       try {
-        const [usersRes, companiesRes] = await Promise.all([
-          apiClient.get('/rankings/users'),
-          apiClient.get('/rankings/companies'),
-        ]);
-
+        const usersRes = await apiClient.get('/rankings/users');
         setUsers(usersRes.data?.data || []);
-        setCompanies(companiesRes.data?.data || []);
       } catch (error) {
-        console.error('Error cargando datos:', error);
+        setUsersError(getErrorMessage(error, 'No pudimos cargar el ranking de usuarios.'));
+      } finally {
+        setUsersLoading(false);
       }
     };
 
-    loadData();
+    const loadCompanies = async () => {
+      try {
+        const companiesRes = await apiClient.get('/rankings/companies');
+        setCompanies(companiesRes.data?.data || []);
+      } catch (error) {
+        setCompaniesError(getErrorMessage(error, 'No pudimos cargar el ranking de empresas.'));
+      } finally {
+        setCompaniesLoading(false);
+      }
+    };
+
+    loadUsers();
+    loadCompanies();
   }, []);
 
   return (
@@ -46,7 +59,11 @@ const Landing = () => {
           <div className="data-card">
             <h2>Usuarios con más patrimonio</h2>
 
-            {users.length === 0 ? (
+            {usersLoading ? (
+              <p className="data-state">Cargando ranking...</p>
+            ) : usersError ? (
+              <p className="data-state data-state--error" role="alert">{usersError}</p>
+            ) : users.length === 0 ? (
               <p className="data-empty">Aún no hay usuarios rankeados.</p>
             ) : (
               users.slice(0, 5).map((user, index) => (
@@ -66,17 +83,25 @@ const Landing = () => {
           <div className="data-card">
             <h2>Empresas más valuadas</h2>
 
-            {companies.slice(0, 5).map((company, index) => (
-              <div className="data-row" key={company.id || index}>
-                <span>
-                  {company.symbol}
-                </span>
+            {companiesLoading ? (
+              <p className="data-state">Cargando ranking...</p>
+            ) : companiesError ? (
+              <p className="data-state data-state--error" role="alert">{companiesError}</p>
+            ) : companies.length === 0 ? (
+              <p className="data-empty">No hay empresas rankeadas.</p>
+            ) : (
+              companies.slice(0, 5).map((company, index) => (
+                <div className="data-row" key={company.id || index}>
+                  <span>
+                    {company.symbol}
+                  </span>
 
-                <span>
-                  {company.marketCap} DCC
-                </span>
-              </div>
-            ))}
+                  <span>
+                    {company.marketCap} DCC
+                  </span>
+                </div>
+              ))
+            )}
           </div>
 
         </div>

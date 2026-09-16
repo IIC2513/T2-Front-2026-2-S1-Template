@@ -221,6 +221,28 @@ img {
   border-color: var(--color-destructive);
 }
 
+.favorite-button {
+  margin-left: var(--space-sm);
+  padding: 0 var(--space-xs);
+  border: 0;
+  background: transparent;
+  color: var(--color-muted-foreground);
+  font-size: 1.25em;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+.favorite-button:hover:not(:disabled),
+.favorite-button--active {
+  color: var(--color-accent);
+}
+
+.favorite-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 /* ------------------------------------------------------------------ */
 /* Feedback messages                                                    */
 /* ------------------------------------------------------------------ */

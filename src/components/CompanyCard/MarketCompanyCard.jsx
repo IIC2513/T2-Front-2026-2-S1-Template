@@ -5,7 +5,14 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   }).format(Number(value) || 0);
 
-export function MarketCompanyCard({ company, onDetail, onBuy }) {
+export function MarketCompanyCard({
+  company,
+  isFavorite = false,
+  isFavoriteLoading = false,
+  onToggleFavorite,
+  onDetail,
+  onBuy,
+}) {
   const companyLogo = company.logoUrl || 'https://placehold.co/240x160/0f172a/ffffff?text=Empresa';
 
   return (
@@ -21,7 +28,20 @@ export function MarketCompanyCard({ company, onDetail, onBuy }) {
 
       <div className="company-card__top">
         <div className="company-card__identity">
-          <h3>{company.name}</h3>
+          <h3>
+            {company.name}
+            <button
+              type="button"
+              className={`favorite-button${isFavorite ? ' favorite-button--active' : ''}`}
+              onClick={() => onToggleFavorite?.(company)}
+              disabled={isFavoriteLoading}
+              aria-label={isFavorite ? `Quitar ${company.name} de favoritos` : `Agregar ${company.name} a favoritos`}
+              aria-pressed={isFavorite}
+              title={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+            >
+              {isFavorite ? '★' : '☆'}
+            </button>
+          </h3>
         </div>
       </div>
 

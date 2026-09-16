@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getErrorMessage } from '../../api/client';
 import './Login.css';
@@ -7,7 +7,12 @@ import './Login.css';
 const Login = () => {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const location = useLocation();
+  const [error, setError] = useState(() => (
+    location.state?.sessionExpired
+      ? 'Tu sesión expiró. Inicia sesión nuevamente.'
+      : ''
+  ));
   const errorRef = useRef(null);
   const { login } = useAuth();
   const navigate = useNavigate();

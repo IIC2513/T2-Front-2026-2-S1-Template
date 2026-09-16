@@ -105,6 +105,16 @@
   padding: var(--space-sm) 0;
 }
 
+.data-state {
+  color: var(--color-muted-foreground);
+  font-size: 0.85rem;
+  padding: var(--space-sm) 0;
+}
+
+.data-state--error {
+  color: #fca5a5;
+}
+
 /* ------------------------------------------------------------------ */
 /* Responsive                                                          */
 /* ------------------------------------------------------------------ */
