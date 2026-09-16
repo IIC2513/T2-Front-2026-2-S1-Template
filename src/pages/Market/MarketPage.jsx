@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../../api/client';
+import apiClient, { getErrorMessage } from '../../api/client';
 import { addFavorite, getFavorites, removeFavorite } from '../../api/favorites';
 import { useAuth } from '../../context/AuthContext';
 import { MarketCompanyCard } from '../../components/CompanyCard/MarketCompanyCard';
@@ -24,9 +24,12 @@ const MarketPage = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [marketError, setMarketError] = useState('');
+  const [favoritesError, setFavoritesError] = useState('');
 
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [pendingAction, setPendingAction] = useState(null); // { type, company }
+  const [actionSubmitting, setActionSubmitting] = useState(false);
   const [donateAmount, setDonateAmount] = useState('1000');
   const [successModal, setSuccessModal] = useState(null);
   const [errorModal, setErrorModal] = useState(null);
@@ -36,6 +39,7 @@ const MarketPage = () => {
 
   const loadCompanies = useCallback(async (nextPage = 1, searchTerm = '') => {
     setLoading(true);
+    setMarketError('');
     try {
       const { data } = await apiClient.get('/companies', {
         params: { page: nextPage, limit: PAGE_SIZE, search: searchTerm || undefined },
@@ -45,6 +49,7 @@ const MarketPage = () => {
       setTotalPages(data.meta?.totalPages ?? 1);
     } catch (error) {
       console.error('Error cargando el mercado:', error);
+      setMarketError(getErrorMessage(error, 'No pudimos cargar las empresas del mercado.'));
     } finally {
       setLoading(false);
     }
@@ -56,12 +61,14 @@ const MarketPage = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      setFavoritesError('');
       setFavoriteCompanies([]);
       setFavoriteIds([]);
       setFavoritesOnly(false);
       return;
     }
 
+    setFavoritesError('');
     getFavorites()
       .then((response) => {
         const favoriteCompanies = response.data ?? [];
@@ -70,6 +77,7 @@ const MarketPage = () => {
       })
       .catch((error) => {
         console.error('Error cargando favoritos:', error);
+        setFavoritesError(getErrorMessage(error, 'No pudimos cargar tus favoritos.'));
         setFavoriteCompanies([]);
         setFavoriteIds([]);
       });
@@ -107,6 +115,7 @@ const MarketPage = () => {
   };
 
   const handleBuy = async (company) => {
+    setActionSubmitting(true);
     try {
       const { data } = await apiClient.post(`/companies/${company.id}/buy`, {});
       updateUser({ balance: data.balance });
@@ -115,17 +124,21 @@ const MarketPage = () => {
       setSelectedCompany(null);
       loadCompanies(page);
     } catch (error) {
-      setPendingAction(null);
       setErrorModal({
         title: 'No se pudo comprar',
-        message: error?.response?.data?.error || 'No pudimos completar la compra.',
+        message: getErrorMessage(error, 'No pudimos completar la compra.'),
       });
+    } finally {
+      setActionSubmitting(false);
+      setPendingAction(null);
     }
   };
 
   const handleDonate = async (company) => {
+    setActionSubmitting(true);
     try {
-      await apiClient.post(`/companies/${company.id}/donate`, { amount: Number(donateAmount) });
+      const { data } = await apiClient.post(`/companies/${company.id}/donate`, { amount: Number(donateAmount) });
+      if (data?.balance !== undefined) updateUser({ balance: data.balance });
       setSuccessModal({ title: 'Donación realizada', message: `Donaste a ${company.name} correctamente.` });
       setPendingAction(null);
       setSelectedCompany(null);
@@ -135,8 +148,8 @@ const MarketPage = () => {
       setPendingAction(null);
       setErrorModal({ title: 'Error', message: 'No pudimos completar la donación.' });
     }
+    setActionSubmitting(false);
   };
-
 
   const handleSearch = (term) => {
     setSearch(term);
@@ -171,6 +184,10 @@ const MarketPage = () => {
 
       {loading ? (
         <p>Cargando empresas disponibles...</p>
+      ) : marketError ? (
+        <div className="alert alert-error" role="alert">
+          {marketError}
+        </div>
       ) : (
         <>
           <section className="market-section">
@@ -180,6 +197,12 @@ const MarketPage = () => {
               <h2>{favoritesOnly ? 'Mis empresas favoritas' : 'Empresas disponibles'}</h2>
               <span>{visibleCompanies.length} resultados</span>
             </div>
+
+            {favoritesError && favoritesOnly && (
+              <div className="alert alert-error" role="alert">
+                {favoritesError}
+              </div>
+            )}
 
             {visibleCompanies.length === 0 ? (
               <div className="empty-state card">
@@ -231,6 +254,7 @@ const MarketPage = () => {
         title="Confirmar compra"
         description={`¿Deseas comprar ${pendingAction?.company?.name}?`}
         confirmLabel="Comprar"
+        isSubmitting={actionSubmitting}
         onClose={() => setPendingAction(null)}
         onConfirm={() => handleBuy(pendingAction.company)}
       />
@@ -240,6 +264,7 @@ const MarketPage = () => {
         title="Confirmar donación"
         description={`¿Cuánto deseas donar a ${pendingAction?.company?.name}?`}
         confirmLabel="Donar"
+        isSubmitting={actionSubmitting}
         variant="danger"
         showAmountInput
         amountLabel="Monto a donar"
