@@ -5,7 +5,7 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   }).format(Number(value) || 0);
 
-export function PortfolioDetailModal({ company, onClose, onEdit, onSell, onDelete }) {
+export function PortfolioDetailModal({ company, onClose, onEdit, onSell, onDelete, isSubmitting = false }) {
   if (!company) return null;
 
   const companyLogo = company.logoUrl || 'https://placehold.co/240x160/0f172a/ffffff?text=Empresa';
@@ -55,17 +55,17 @@ export function PortfolioDetailModal({ company, onClose, onEdit, onSell, onDelet
         </div>
 
         <div className="company-modal__actions">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
+          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={isSubmitting}>
             Cerrar
           </button>
-          <button type="button" className="btn btn-secondary" onClick={onEdit}>
+          <button type="button" className="btn btn-secondary" onClick={onEdit} disabled={isSubmitting}>
             Editar
           </button>
-          <button type="button" className="btn btn-primary" onClick={onSell}>
-            Vender
+          <button type="button" className="btn btn-primary" onClick={onSell} disabled={isSubmitting}>
+            {isSubmitting ? 'Procesando...' : 'Vender'}
           </button>
-          <button type="button" className="btn btn-danger" onClick={onDelete}>
-            Eliminar
+          <button type="button" className="btn btn-danger" onClick={onDelete} disabled={isSubmitting}>
+            {isSubmitting ? 'Procesando...' : 'Eliminar'}
           </button>
         </div>
       </div>
