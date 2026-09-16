@@ -281,7 +281,15 @@ const PortfolioPage = () => {
         onClose={() => setIsCreateOpen(false)}
         isSubmitting={createSubmitting}
         submitError={createError}
-        onSubmit={(event) => { event.preventDefault(); handleCreate(); }}
+        onSubmit={(event) => {
+          event.preventDefault();
+          setConfirm({
+            title: 'Crear empresa',
+            description: `Deseas crear la empresa ${createForm.name}?`,
+            confirmLabel: 'Crear empresa',
+            onConfirm: handleCreate,
+          });
+        }}
       />
 
       <ConfirmActionModal
