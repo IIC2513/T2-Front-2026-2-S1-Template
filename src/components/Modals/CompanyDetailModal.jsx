@@ -8,6 +8,9 @@ const formatCurrency = (value) =>
 export function CompanyDetailModal({
   company,
   isAuthenticated,
+  isFavorite = false,
+  isFavoriteLoading = false,
+  onToggleFavorite,
   onClose,
   onBuy,
   onDonate,
@@ -33,7 +36,20 @@ export function CompanyDetailModal({
               event.currentTarget.src = 'https://placehold.co/240x160/0f172a/ffffff?text=Empresa';
             }}
           />
-          <h2 id="company-modal-title">{company.name}</h2>
+          <h2 id="company-modal-title">
+            {company.name}
+            <button
+              type="button"
+              className={`favorite-button${isFavorite ? ' favorite-button--active' : ''}`}
+              onClick={() => onToggleFavorite?.(company)}
+              disabled={isFavoriteLoading}
+              aria-label={isFavorite ? `Quitar ${company.name} de favoritos` : `Agregar ${company.name} a favoritos`}
+              aria-pressed={isFavorite}
+              title={isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+            >
+              {isFavorite ? '★' : '☆'}
+            </button>
+          </h2>
           <p className="company-modal__symbol">{company.symbol}</p>
         </div>
 

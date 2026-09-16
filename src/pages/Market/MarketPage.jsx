@@ -217,6 +217,9 @@ const MarketPage = () => {
       <CompanyDetailModal
         company={selectedCompany}
         isAuthenticated={isAuthenticated}
+        isFavorite={Boolean(selectedCompany && favoriteIds.includes(selectedCompany.id))}
+        isFavoriteLoading={Boolean(selectedCompany && favoriteActionId === selectedCompany.id)}
+        onToggleFavorite={handleToggleFavorite}
         onClose={() => setSelectedCompany(null)}
         onBuy={() => setPendingAction({ type: 'buy', company: selectedCompany })}
         onDonate={() => setPendingAction({ type: 'donate', company: selectedCompany })}
