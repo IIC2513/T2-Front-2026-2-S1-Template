@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../../api/client';
+import { getFavorites } from '../../api/favorites';
 import { useAuth } from '../../context/AuthContext';
 import { MarketCompanyCard } from '../../components/CompanyCard/MarketCompanyCard';
 import { CompanyDetailModal } from '../../components/Modals/CompanyDetailModal';
@@ -17,6 +18,7 @@ const MarketPage = () => {
   const navigate = useNavigate();
 
   const [companies, setCompanies] = useState([]);
+  const [favoriteIds, setFavoriteIds] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -48,6 +50,23 @@ const MarketPage = () => {
   useEffect(() => {
     loadCompanies(1);
   }, [loadCompanies]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setFavoriteIds([]);
+      return;
+    }
+
+    getFavorites()
+      .then((response) => {
+        const companies = response.data ?? [];
+        setFavoriteIds(companies.map((company) => company.id));
+      })
+      .catch((error) => {
+        console.error('Error cargando favoritos:', error);
+        setFavoriteIds([]);
+      });
+  }, [isAuthenticated]);
 
   const handleBuy = async (company) => {
     try {
@@ -112,6 +131,7 @@ const MarketPage = () => {
                   <MarketCompanyCard
                     key={company.id}
                     company={company}
+                    isFavorite={favoriteIds.includes(company.id)}
                     onDetail={setSelectedCompany}
                     onBuy={(company) => setPendingAction({ type: 'buy', company })}
                   />
