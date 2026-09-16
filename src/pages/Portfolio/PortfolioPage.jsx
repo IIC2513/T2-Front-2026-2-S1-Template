@@ -271,7 +271,15 @@ const PortfolioPage = () => {
         onClose={() => setIsEditOpen(false)}
         isSubmitting={editSubmitting}
         submitError={editError}
-        onSubmit={(event) => { event.preventDefault(); handleEdit(); }}
+        onSubmit={(event) => {
+          event.preventDefault();
+          setConfirm({
+            title: 'Editar empresa',
+            description: `Deseas guardar los cambios de ${editForm.name}?`,
+            confirmLabel: 'Guardar cambios',
+            onConfirm: handleEdit,
+          });
+        }}
       />
 
       <CreateCompanyModal
