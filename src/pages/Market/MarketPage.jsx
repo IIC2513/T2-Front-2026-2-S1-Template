@@ -18,6 +18,7 @@ const MarketPage = () => {
   const navigate = useNavigate();
 
   const [companies, setCompanies] = useState([]);
+  const [favoriteCompanies, setFavoriteCompanies] = useState([]);
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [favoriteActionId, setFavoriteActionId] = useState(null);
   const [page, setPage] = useState(1);
@@ -30,6 +31,7 @@ const MarketPage = () => {
   const [successModal, setSuccessModal] = useState(null);
   const [errorModal, setErrorModal] = useState(null);
   const [search, setSearch] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
 
   const loadCompanies = useCallback(async (nextPage = 1, searchTerm = '') => {
@@ -54,17 +56,21 @@ const MarketPage = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
+      setFavoriteCompanies([]);
       setFavoriteIds([]);
+      setFavoritesOnly(false);
       return;
     }
 
     getFavorites()
       .then((response) => {
-        const companies = response.data ?? [];
-        setFavoriteIds(companies.map((company) => company.id));
+        const favoriteCompanies = response.data ?? [];
+        setFavoriteCompanies(favoriteCompanies);
+        setFavoriteIds(favoriteCompanies.map((company) => company.id));
       })
       .catch((error) => {
         console.error('Error cargando favoritos:', error);
+        setFavoriteCompanies([]);
         setFavoriteIds([]);
       });
   }, [isAuthenticated]);
@@ -82,10 +88,12 @@ const MarketPage = () => {
       if (isFavorite) {
         await removeFavorite(company.id);
         setFavoriteIds((current) => current.filter((id) => id !== company.id));
+        setFavoriteCompanies((current) => current.filter((item) => item.id !== company.id));
         setSuccessModal({ title: 'Favorito eliminado', message: `${company.name} ya no está en tus favoritos.` });
       } else {
         await addFavorite(company.id);
         setFavoriteIds((current) => [...current, company.id]);
+        setFavoriteCompanies((current) => [...current, company]);
         setSuccessModal({ title: 'Favorito agregado', message: `${company.name} fue agregada a tus favoritos.` });
       }
     } catch (error) {
@@ -132,12 +140,34 @@ const MarketPage = () => {
 
   const handleSearch = (term) => {
     setSearch(term);
-    loadCompanies(1, term);
+    setPage(1);
+    if (!favoritesOnly) loadCompanies(1, term);
   };
+
+  const handleToggleFavorites = (enabled) => {
+    setFavoritesOnly(enabled);
+    setPage(1);
+  };
+
+  const filteredFavoriteCompanies = favoriteCompanies.filter((company) => {
+    if (!search) return true;
+    const term = search.toLowerCase();
+    return company.name.toLowerCase().includes(term) || company.symbol.toLowerCase().includes(term);
+  });
+  const favoriteTotalPages = Math.max(1, Math.ceil(filteredFavoriteCompanies.length / PAGE_SIZE));
+  const visibleCompanies = favoritesOnly
+    ? filteredFavoriteCompanies.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+    : companies;
+  const visibleTotalPages = favoritesOnly ? favoriteTotalPages : totalPages;
 
   return (
     <div className="market-page container">
-      <SearchBar onSearch={handleSearch} />
+      <SearchBar
+        onSearch={handleSearch}
+        showFavorites={isAuthenticated}
+        favoritesOnly={favoritesOnly}
+        onToggleFavorites={handleToggleFavorites}
+      />
 
       {loading ? (
         <p>Cargando empresas disponibles...</p>
@@ -147,17 +177,17 @@ const MarketPage = () => {
 
 
             <div className="section-heading">
-              <h2>Empresas disponibles</h2>
-              <span>{companies.length} resultados</span>
+              <h2>{favoritesOnly ? 'Mis empresas favoritas' : 'Empresas disponibles'}</h2>
+              <span>{visibleCompanies.length} resultados</span>
             </div>
 
-            {companies.length === 0 ? (
+            {visibleCompanies.length === 0 ? (
               <div className="empty-state card">
-                <p>No hay empresas para mostrar.</p>
+                <p>{favoritesOnly ? 'AÃºn no tienes empresas favoritas.' : 'No hay empresas para mostrar.'}</p>
               </div>
             ) : (
               <div className="company-grid">
-                {companies.map((company) => (
+                {visibleCompanies.map((company) => (
                   <MarketCompanyCard
                     key={company.id}
                     company={company}
@@ -173,11 +203,11 @@ const MarketPage = () => {
           </section>
 
           <div className="pagination">
-            <button type="button" className="btn btn-secondary" disabled={page === 1} onClick={() => loadCompanies(page - 1, search)}>
+            <button type="button" className="btn btn-secondary" disabled={page === 1} onClick={() => favoritesOnly ? setPage(page - 1) : loadCompanies(page - 1, search)}>
               Anterior
             </button>
-            <span>Página {page} de {totalPages}</span>
-            <button type="button" className="btn btn-secondary" disabled={page === totalPages} onClick={() => loadCompanies(page + 1, search)}>
+            <span>Página {page} de {visibleTotalPages}</span>
+            <button type="button" className="btn btn-secondary" disabled={page === visibleTotalPages} onClick={() => favoritesOnly ? setPage(page + 1) : loadCompanies(page + 1, search)}>
               Siguiente
             </button>
           </div>
