@@ -1,3 +1,5 @@
+import { CompanyReviews } from '../CompanyReviews/CompanyReviews';
+
 const formatCurrency = (value) =>
   new Intl.NumberFormat('es-CL', {
     style: 'currency',
@@ -76,6 +78,8 @@ export function CompanyDetailModal({
           <span>Descripción</span>
           <p>{company.description}</p>
         </div>
+
+        <CompanyReviews companyId={company.id} onLogin={onLogin} />
 
         <div className="company-modal__actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>
