@@ -1,0 +1,17 @@
+.star-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  
+  .star-rating--sm { font-size: 0.85rem; }
+  .star-rating--md { font-size: 1rem; }
+  
+  .star-filled { color: #f5b301; }
+  .star-empty { color: #d1d5db; }
+  
+  .star-rating-count {
+    margin-left: 4px;
+    font-size: 0.8em;
+    color: var(--text-secondary, #6b7280);
+  }
