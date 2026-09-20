@@ -1,60 +1,165 @@
 .company-reviews {
-    margin-top: 1.5rem;
-    border-top: 1px solid var(--border-color, #e2e2e2);
-    padding-top: 1rem;
-  }
-  
-  .company-reviews-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-  }
-  
-  .company-reviews-form {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  
-  .company-reviews-form textarea {
-    min-height: 70px;
-    resize: vertical;
-  }
-  
-  .company-reviews-login-hint {
-    margin-bottom: 1rem;
-    color: var(--text-secondary, #6b7280);
-  }
-  
-  .company-reviews-empty {
-    color: var(--text-secondary, #6b7280);
-  }
-  
-  .company-reviews-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    max-height: 260px;
-    overflow-y: auto;
-  }
-  
-  .company-reviews-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .btn-link {
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--primary-color, #6b7280);
-    text-decoration: underline;
-    cursor: pointer;
-    font: inherit;
-  }
+  margin-top: var(--space-xl);
+  padding-top: var(--space-xl);
+  border-top: 1px solid var(--color-border);
+}
+
+.company-reviews-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.company-reviews-label {
+  display: block;
+  margin-bottom: .25rem;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.company-reviews-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.company-reviews-average {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.company-reviews-average strong {
+  font-size: .85rem;
+}
+
+/* Formulario */
+
+.company-reviews-form {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  margin-bottom: var(--space-lg);
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+}
+
+.company-reviews-form label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--color-muted-foreground);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.company-reviews-form select,
+.company-reviews-form textarea {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font: inherit;
+}
+
+.company-reviews-form select {
+  padding: .45rem .6rem;
+}
+
+.company-reviews-form textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: .7rem;
+  resize: vertical;
+  font-size: .82rem;
+}
+
+.company-reviews-form textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* Login */
+
+.company-reviews-login-hint {
+  margin-bottom: var(--space-lg);
+  color: var(--color-muted-foreground);
+  font-size: .8rem;
+}
+
+.btn-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* Reviews */
+
+.company-reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.company-review {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  transition: .16s ease;
+}
+
+.company-review:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(
+    in srgb,
+    var(--color-border) 55%,
+    var(--color-foreground)
+  );
+}
+
+.company-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.company-review-header strong {
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.company-review p {
+  margin: .75rem 0 0;
+  padding-top: .75rem;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-foreground);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.company-reviews-state {
+  color: var(--color-muted-foreground);
+  font-size: .8rem;
+}
