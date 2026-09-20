@@ -1,8 +1,6 @@
 import axios from 'axios';
+const baseURL = import.meta.env.VITE_API_URL;
 
-const baseURL =
-  import.meta.env.VITE_API_URL ||
-  'https://t2-back-2026-2-production.up.railway.app/api';
 
 const apiClient = axios.create({
   baseURL,
