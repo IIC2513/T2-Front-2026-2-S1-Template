@@ -1,65 +1,97 @@
-import { createContext, useCallback, useContext, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import apiClient from '../api/client';
 
 const AuthContext = createContext(null);
 
-const TOKEN_KEY = 'dccapital_token';
-const USER_KEY = 'dccapital_user';
-
-function readStoredUser() {
-  try {
-    const raw = localStorage.getItem(USER_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(readStoredUser);
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Comprueba si existe una sesión válida en el backend
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data } = await apiClient.get('/me');
+      setUser(data);
+      return data;
+    } catch (error) {
+      if (error.response?.status === 401) {
+        setUser(null);
+        return null;
+      }
+
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Al cargar la aplicación, preguntamos al backend
+  // si ya existe una sesión válida.
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
 
   const login = useCallback(async (username, password) => {
-    const { data } = await apiClient.post('/login', { username, password });
-    localStorage.setItem(TOKEN_KEY, data.token);
-    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-    setToken(data.token);
+    const { data } = await apiClient.post('/login', {
+      username,
+      password,
+    });
+
     setUser(data.user);
+
     return data.user;
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setToken(null);
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await apiClient.post('/logout');
+    } finally {
+      setUser(null);
+    }
   }, []);
 
-  // Para que Portfolio/compra/venta/donación puedan reflejar el nuevo balance
-  // en el Navbar sin forzar un logout/login.
+  // Permite actualizar datos del usuario, por ejemplo el balance.
   const updateUser = useCallback((patch) => {
     setUser((prev) => {
-      const next = { ...prev, ...patch };
-      localStorage.setItem(USER_KEY, JSON.stringify(next));
-      return next;
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        ...patch,
+      };
     });
   }, []);
 
   const value = {
     user,
-    token,
-    isAuthenticated: Boolean(token),
+    loading,
+    isAuthenticated: Boolean(user),
     login,
     logout,
     updateUser,
+    refreshUser,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components -- hook vive junto al Provider por conveniencia de import
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth debe usarse dentro de <AuthProvider>');
+
+  if (!ctx) {
+    throw new Error('useAuth debe usarse dentro de <AuthProvider>');
+  }
+
   return ctx;
 }
